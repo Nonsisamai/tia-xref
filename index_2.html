@@ -1,0 +1,895 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TIA XRef — trasovanie signálov v PLC projekte</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.28.1/cytoscape.min.js"></script>
+<style>
+:root{
+  --bg:#101418; --panel:#171c22; --panel2:#1d232b; --line:#262d36;
+  --text:#d8dee6; --dim:#7c8794; --amber:#f2a93b; --blue:#5fa8e8;
+  --green:#4caf7d; --red:#e06a5a;
+  --mono:ui-monospace,'Cascadia Code','JetBrains Mono',Consolas,monospace;
+  --sans:-apple-system,'Segoe UI',Roboto,Ubuntu,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:14px}
+button{font:inherit;cursor:pointer}
+a{color:var(--blue)}
+header{display:flex;align-items:center;gap:14px;padding:10px 16px;border-bottom:1px solid var(--line);background:var(--panel)}
+.logo{font-family:var(--mono);font-weight:700;letter-spacing:.06em}
+.logo .x{color:var(--amber)}
+.logo small{display:block;font-weight:400;color:var(--dim);letter-spacing:0;font-size:11px}
+header .spacer{flex:1}
+.btn{background:var(--panel2);border:1px solid var(--line);color:var(--text);padding:7px 12px;border-radius:6px}
+.btn:hover{border-color:var(--dim)}
+.btn:focus-visible,input:focus-visible{outline:2px solid var(--amber);outline-offset:1px}
+.btn.primary{background:var(--amber);border-color:var(--amber);color:#1a1207;font-weight:600}
+#drop{border:1.5px dashed var(--line);border-radius:10px;margin:18px;padding:34px 20px;text-align:center;color:var(--dim);transition:border-color .15s,background .15s}
+#drop.over{border-color:var(--amber);background:#1a1c17;color:var(--text)}
+#drop strong{color:var(--text)}
+#drop .hint{font-size:12px;margin-top:8px}
+#app{display:none;height:calc(100% - 57px)}
+#app.on{display:flex}
+aside{width:300px;min-width:230px;border-right:1px solid var(--line);display:flex;flex-direction:column;background:var(--panel)}
+aside .search{padding:10px}
+aside input{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:6px;color:var(--text);padding:8px 10px;font-family:var(--mono);font-size:13px}
+#taglist{overflow:auto;flex:1}
+.tagrow{display:flex;align-items:center;gap:8px;width:100%;text-align:left;background:none;border:0;border-bottom:1px solid var(--line);color:var(--text);padding:7px 10px;font-family:var(--mono);font-size:12.5px}
+.tagrow:hover{background:var(--panel2)}
+.tagrow.sel{background:var(--panel2);box-shadow:inset 3px 0 0 var(--amber)}
+.tagrow .name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cnt{font-size:10.5px;color:var(--dim)}
+.cnt b{font-weight:600}
+.cnt.w b{color:var(--amber)} .cnt.r b{color:var(--blue)}
+main{flex:1;display:flex;flex-direction:column;min-width:0}
+nav{display:flex;gap:2px;padding:8px 14px 0;border-bottom:1px solid var(--line)}
+nav button{background:none;border:0;color:var(--dim);padding:8px 12px;border-bottom:2px solid transparent}
+nav button.on{color:var(--text);border-bottom-color:var(--amber)}
+.view{flex:1;overflow:auto;padding:16px;display:none}
+.view.on{display:block}
+#view-graph.on{display:flex;flex-direction:column}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);margin-bottom:8px}
+.tagchip{font-family:var(--mono);font-size:12.5px;padding:1px 7px;border-radius:5px;border:1px solid var(--line);background:var(--panel2)}
+.tagchip.w{border-color:#5c4413;color:var(--amber)}
+.tagchip.r{border-color:#1f3c57;color:var(--blue)}
+.tagchip.click{cursor:pointer}
+.tagchip.click:hover{border-color:var(--dim)}
+.dir-toggle{display:flex;gap:8px;margin:6px 0 16px;flex-wrap:wrap}
+.tree{font-family:var(--mono);font-size:13px}
+.tnode{position:relative;padding-left:22px;margin:2px 0}
+.tnode::before{content:"";position:absolute;left:6px;top:0;bottom:0;width:2px;background:var(--line)}
+.tnode.root::before{background:var(--green)}
+.tnode>.row{display:flex;align-items:center;gap:8px;padding:3px 0}
+.netline{color:var(--dim);font-size:12px;padding:2px 0 2px 22px;position:relative}
+.netline::before{content:"";position:absolute;left:6px;top:50%;width:12px;height:2px;background:var(--line)}
+.netline b{color:var(--text);font-weight:600}
+.netline.bind b{color:var(--green)}
+.flag{font-size:10.5px;color:var(--dim);border:1px solid var(--line);border-radius:4px;padding:0 5px}
+.flag.goto{color:var(--red);border-color:#5a2c26}
+.flag.warn{color:var(--red);border-color:#5a2c26}
+.flag.bind{color:var(--green);border-color:#245139}
+.empty{color:var(--dim);padding:30px;text-align:center}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{border-bottom:1px solid var(--line);padding:7px 10px;text-align:left;vertical-align:top}
+th{color:var(--dim);font-weight:500;font-size:11.5px;text-transform:uppercase;letter-spacing:.08em}
+td.mono{font-family:var(--mono);font-size:12.5px}
+tr:hover td{background:var(--panel)}
+tr.synth td{color:var(--dim)}
+#cy{flex:1;min-height:340px;border:1px solid var(--line);border-radius:8px;background:var(--panel)}
+.legend{display:flex;gap:16px;padding:8px 2px;color:var(--dim);font-size:12px}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px;vertical-align:-1px}
+footer{padding:6px 16px;border-top:1px solid var(--line);color:var(--dim);font-size:11.5px;font-family:var(--mono)}
+@media (max-width:760px){ #app.on{flex-direction:column} aside{width:100%;max-height:38vh} }
+@media (prefers-reduced-motion:reduce){ *{transition:none!important} }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">TIA<span class="x">·</span>XREF<small>trasovanie signálov v PLC projekte · v0.2</small></div>
+  <div class="spacer"></div>
+  <button class="btn" id="btnDemo">Načítať demo</button>
+  <button class="btn" id="btnExport" hidden>Export JSON</button>
+  <label class="btn primary" for="file">+ Pridať XML exporty</label>
+  <input type="file" id="file" accept=".xml" multiple hidden>
+</header>
+
+<div id="drop">
+  <strong>Sem pretiahni XML exporty blokov z TIA Portalu</strong>
+  <div class="hint">TIA Portal → pravý klik na blok → Export block as XML (SimaticML).<br>
+  Všetko sa spracuje v tvojom prehliadači — kód nikam neodchádza.<br>
+  Tip: importuj aj volané FB/FC — trasovanie potom prejde cez piny volaní.</div>
+</div>
+
+<div id="app">
+  <aside>
+    <div class="search"><input id="q" placeholder="hľadať tag…" autocomplete="off"></div>
+    <div id="taglist"></div>
+  </aside>
+  <main>
+    <nav>
+      <button data-v="trace" class="on">Trasovanie</button>
+      <button data-v="graph">Graf</button>
+      <button data-v="xref">Cross-reference</button>
+      <button data-v="nets">Networky</button>
+    </nav>
+
+    <div class="view on" id="view-trace">
+      <div class="eyebrow">Trasovanie signálu</div>
+      <div class="dir-toggle">
+        <button class="btn" id="dirUp">⬅ Odkiaľ signál prichádza (upstream)</button>
+        <button class="btn" id="dirDown">Kam signál ide (downstream) ➡</button>
+      </div>
+      <div id="trace" class="tree"><div class="empty">Vyber tag vľavo alebo klikni na ľubovoľný tag v tabuľkách.</div></div>
+    </div>
+
+    <div class="view" id="view-graph">
+      <div class="eyebrow">Graf závislostí vybraného tagu</div>
+      <div class="legend">
+        <span><span class="dot" style="background:var(--amber)"></span>vybraný tag</span>
+        <span><span class="dot" style="background:var(--blue)"></span>tag</span>
+        <span><span class="dot" style="background:var(--green)"></span>network / väzba volania</span>
+      </div>
+      <div id="cy"></div>
+    </div>
+
+    <div class="view" id="view-xref">
+      <div class="eyebrow">Cross-reference — všetky tagy · lokálne premenné blokov sú zapísané ako Blok.#Premenná</div>
+      <table id="xtab"><thead><tr><th>Tag</th><th>Zápis (kde)</th><th>Čítanie (kde)</th></tr></thead><tbody></tbody></table>
+    </div>
+
+    <div class="view" id="view-nets">
+      <div class="eyebrow">Naparsované networky a väzby volaní</div>
+      <table id="ntab"><thead><tr><th>Blok / Net</th><th>Titulok</th><th>Číta</th><th>Zapisuje</th><th>Volá / skoky</th></tr></thead><tbody></tbody></table>
+    </div>
+  </main>
+</div>
+
+<footer id="status">Žiadne dáta. Pridaj XML alebo si pozri demo.</footer>
+
+<script>
+/* TIA XRef v0.2 — parser jadra. Čisté DOM API, beží v prehliadači aj v Node (s xmldom). */
+
+const COIL_PARTS = new Set(['Coil','SCoil','RCoil','Set','Reset','SetCoil','ResetCoil','SdCoil','SfCoil']);
+const BLOCK_TAGS = ['SW.Blocks.OB','SW.Blocks.FB','SW.Blocks.FC','SW.Blocks.GlobalDB'];
+const KEYWORDS = new Set(['IF','THEN','ELSE','ELSIF','END_IF','CASE','OF','END_CASE','FOR','TO','BY','DO','END_FOR','WHILE','END_WHILE','REPEAT','UNTIL','END_REPEAT','RETURN','TRUE','FALSE','AND','OR','XOR','NOT','MOD','GOTO']);
+
+const localName = n => n.localName || n.nodeName.split(':').pop();
+function el(node,name){ for(let c=node.firstChild;c;c=c.nextSibling) if(c.nodeType===1&&localName(c)===name) return c; return null; }
+function els(node,name){ const o=[]; for(let c=node.firstChild;c;c=c.nextSibling) if(c.nodeType===1&&localName(c)===name) o.push(c); return o; }
+function descendants(node,name){ const o=[]; (function w(n){ for(let c=n.firstChild;c;c=c.nextSibling) if(c.nodeType===1){ if(localName(c)===name)o.push(c); w(c);} })(node); return o; }
+const text = n => n ? (n.textContent||'').trim() : '';
+
+/* Access → plný názov tagu. Lokálne premenné sú kvalifikované blokom: "FB_Motor.#Start_Req". */
+function accessName(a, blockName){
+  const scope = a.getAttribute('Scope');
+  if(scope==='LiteralConstant'||scope==='TypedConstant'||scope==='LocalConstant'||scope==='GlobalConstant') return null;
+  const sym = el(a,'Symbol');
+  if(sym){
+    const name = els(sym,'Component').map(c=>c.getAttribute('Name')).join('.');
+    if(!name) return null;
+    if(scope==='LocalVariable') return blockName + '.#' + name;
+    return name;
+  }
+  const addr = el(a,'Address');
+  if(addr){
+    const map={Input:'I',Output:'Q',Memory:'M'};
+    const bo=+addr.getAttribute('BitOffset')||0;
+    return '%'+(map[addr.getAttribute('Area')]||addr.getAttribute('Area')||'?')+Math.floor(bo/8)+'.'+(bo%8);
+  }
+  return null;
+}
+
+function addRef(net,tag,mode){
+  if(!tag)return;
+  const k=tag+'|'+mode;
+  if(net._seen.has(k))return;
+  net._seen.add(k);
+  (mode==='write'?net.writes:net.reads).push(tag);
+}
+
+/* ---------- FlgNet (LAD/FBD) ---------- */
+function parseFlgNet(flg,net){
+  const parts=el(flg,'Parts'), wires=el(flg,'Wires');
+  if(!parts)return;
+  const accessByUId={},partByUId={},callParamDir={};
+  for(const a of els(parts,'Access')){ const n=accessName(a,net.block); if(n)accessByUId[a.getAttribute('UId')]=n; }
+  for(const p of els(parts,'Part')) partByUId[p.getAttribute('UId')]={kind:'Part',name:p.getAttribute('Name')};
+  for(const c of els(parts,'Call')){
+    const uid=c.getAttribute('UId'), info=el(c,'CallInfo');
+    partByUId[uid]={kind:'Call',name:info?info.getAttribute('Name'):'?'};
+    if(info){
+      net.calls.push(info.getAttribute('Name'));
+      callParamDir[uid]={};
+      for(const prm of els(info,'Parameter')) callParamDir[uid][prm.getAttribute('Name')]=prm.getAttribute('Section')||null;
+      const inst=el(info,'Instance');
+      if(inst){ const iname=els(inst,'Component').map(x=>x.getAttribute('Name')).join('.'); if(iname)net.instances.push(iname); }
+    }
+  }
+  if(!wires)return;
+  for(const w of els(wires,'Wire')){
+    const ident=el(w,'IdentCon'); if(!ident)continue;
+    const tag=accessByUId[ident.getAttribute('UId')]; if(!tag)continue;
+    for(const con of els(w,'NameCon')){
+      const uid=con.getAttribute('UId');
+      const part=partByUId[uid], port=con.getAttribute('Name')||'';
+      if(!part)continue;
+      if(part.kind==='Call'){
+        if(/^en$/i.test(port)){ addRef(net,tag,'read'); continue; }
+        if(/^eno$/i.test(port)){ addRef(net,tag,'write'); continue; }
+        // väzba formal ↔ actual — vyrieši sa po naparsovaní všetkých blokov
+        net.bindings.push({callee:part.name, port, actual:tag, dir:(callParamDir[uid]||{})[port]||null});
+        continue;
+      }
+      let isWrite=false;
+      if(COIL_PARTS.has(part.name)) isWrite=/^operand$/i.test(port);
+      else isWrite=/^out\d*$/i.test(port);
+      addRef(net,tag,isWrite?'write':'read');
+    }
+  }
+}
+
+/* ---------- StructuredText (SCL) ---------- */
+function handleSclCall(a,net){
+  const info = el(a,'CallInfo') || descendants(a,'CallInfo')[0];
+  if(!info)return;
+  const callee = info.getAttribute('Name') || '?';
+  net.calls.push(callee);
+  const inst = el(info,'Instance');
+  if(inst){ const iname=els(inst,'Component').map(x=>x.getAttribute('Name')).join('.'); if(iname)net.instances.push(iname); }
+  for(const prm of descendants(info,'Parameter')){
+    const port = prm.getAttribute('Name'), dir = prm.getAttribute('Section')||null;
+    for(const inner of descendants(prm,'Access')){
+      const actual = accessName(inner,net.block);
+      if(actual) net.bindings.push({callee, port, actual, dir});
+    }
+  }
+}
+
+function parseSCL(st,net){
+  const items=[];
+  for(let c=st.firstChild;c;c=c.nextSibling){
+    if(c.nodeType!==1)continue;
+    const ln=localName(c);
+    if(ln==='Access'){
+      if(c.getAttribute('Scope')==='Call'){ handleSclCall(c,net); continue; }
+      items.push({t:'access',name:accessName(c,net.block)});
+    }
+    else if(ln==='Token')items.push({t:'tok',v:(c.getAttribute('Text')||'').trim()});
+  }
+  for(let i=0;i<items.length;i++){
+    const it=items[i];
+    if(it.t==='tok'&&it.v.toUpperCase()==='GOTO'){
+      const tgt=items.slice(i+1).find(x=>x.t==='tok'&&x.v&&x.v!==';');
+      if(tgt)net.gotos.push(tgt.v);
+    }
+    if(it.t==='tok'&&items[i+1]&&items[i+1].t==='tok'&&items[i+1].v===':'
+       &&/^[A-Za-z_]\w*$/.test(it.v)&&!KEYWORDS.has(it.v.toUpperCase())) net.labels.push(it.v);
+    if(it.t==='access'&&it.name){
+      const nxt=items[i+1];
+      addRef(net,it.name,(nxt&&nxt.t==='tok'&&nxt.v===':=')?'write':'read');
+    }
+  }
+}
+
+/* ---------- bloky a networky ---------- */
+function netTitle(cu){
+  const ol=el(cu,'ObjectList'); if(!ol)return'';
+  for(const mt of els(ol,'MultilingualText'))
+    if(mt.getAttribute('CompositionName')==='Title') return text(descendants(mt,'Text')[0]);
+  return'';
+}
+
+function parseTiaXml(doc,sourceFile){
+  const model={blocks:[],networks:[]};
+  const root=doc.documentElement;
+  for(const tag of BLOCK_TAGS){
+    for(const b of descendants(root,tag)){
+      const attrs=el(b,'AttributeList'); if(!attrs)continue;
+      const block={name:text(el(attrs,'Name')),number:text(el(attrs,'Number')),
+        type:tag.replace('SW.Blocks.',''),lang:text(el(attrs,'ProgrammingLanguage'))||(tag.endsWith('GlobalDB')?'DB':'?'),
+        file:sourceFile,interface:[]};
+      const iface=el(attrs,'Interface');
+      if(iface) for(const sec of descendants(iface,'Section'))
+        for(const m of els(sec,'Member'))
+          block.interface.push({section:sec.getAttribute('Name'),name:m.getAttribute('Name'),type:m.getAttribute('Datatype')});
+      model.blocks.push(block);
+      const ol=el(b,'ObjectList'); if(!ol)continue;
+      let idx=0;
+      for(const cu of els(ol,'SW.Blocks.CompileUnit')){
+        idx++;
+        const net={block:block.name,index:idx,title:netTitle(cu),reads:[],writes:[],calls:[],instances:[],
+                   labels:[],gotos:[],bindings:[],unsupported:null,_seen:new Set()};
+        const nsrc=descendants(cu,'NetworkSource')[0];
+        if(nsrc){
+          const flg=descendants(nsrc,'FlgNet')[0], st=descendants(nsrc,'StructuredText')[0];
+          if(flg)parseFlgNet(flg,net);
+          else if(st)parseSCL(st,net);
+          else if(descendants(nsrc,'StatementList')[0])net.unsupported='STL';
+          else if(nsrc.firstChild)net.unsupported=localName(descendants(nsrc,'*')[0]||nsrc)||'?';
+        }
+        if(block.lang==='GRAPH')net.unsupported='GRAPH';
+        delete net._seen;
+        model.networks.push(net);
+      }
+    }
+  }
+  return model;
+}
+
+/* ---------- väzby volaní: formal ↔ actual ----------
+   Pre každé volanie vzniknú syntetické „väzbové networky":
+   Input : actual → CALLEE.#param        (zápis do formálneho vstupu)
+   Output: CALLEE.#param → actual        (formálny výstup zapisuje actual)
+   InOut : oba smery.
+   Ak smer nie je v XML, dohľadá sa v interface volaného bloku (ak je importovaný). */
+function expandBindings(blocks,networks){
+  const ifaceDir={};
+  for(const b of blocks) for(const m of b.interface||[])
+    ifaceDir[b.name+'|'+m.name]=m.section;
+  const out=[];
+  for(const net of networks){
+    for(const bd of net.bindings||[]){
+      let dir=bd.dir||ifaceDir[bd.callee+'|'+bd.port]||'Input';
+      const formal=bd.callee+'.#'+bd.port;
+      const base={block:net.block,index:net.index,title:'CALL '+bd.callee+' · pin '+bd.port,
+                  calls:[],instances:[],labels:[],gotos:[],bindings:[],unsupported:null,synthetic:true};
+      if(dir==='Input'||dir==='InOut') out.push({...base,reads:[bd.actual],writes:[formal]});
+      if(dir==='Output'||dir==='InOut'||dir==='Return') out.push({...base,reads:[formal],writes:[bd.actual]});
+    }
+  }
+  return out;
+}
+
+/* ---------- xref index + dependency engine ---------- */
+function buildIndex(networks){
+  const idx={readsOf:{},writesOf:{},tags:new Set()};
+  networks.forEach((net,i)=>{
+    for(const t of net.reads){(idx.readsOf[t]=idx.readsOf[t]||[]).push(i);idx.tags.add(t);}
+    for(const t of net.writes){(idx.writesOf[t]=idx.writesOf[t]||[]).push(i);idx.tags.add(t);}
+  });
+  return idx;
+}
+function traceUpstream(tag,networks,idx,maxDepth=8){
+  const visited=new Set();
+  function walk(t,d){
+    const node={tag:t,sources:[],cycle:false,truncated:false};
+    if(visited.has(t)){node.cycle=true;return node;}
+    if(d>=maxDepth){node.truncated=true;return node;}
+    visited.add(t);
+    for(const ni of idx.writesOf[t]||[]){
+      const net=networks[ni];
+      const src={block:net.block,network:net.index,title:net.title,gotos:net.gotos,synthetic:net.synthetic,inputs:[]};
+      for(const r of net.reads)src.inputs.push(walk(r,d+1));
+      node.sources.push(src);
+    }
+    visited.delete(t);
+    return node;
+  }
+  return walk(tag,0);
+}
+function traceDownstream(tag,networks,idx,maxDepth=8){
+  const visited=new Set();
+  function walk(t,d){
+    const node={tag:t,targets:[],cycle:false,truncated:false};
+    if(visited.has(t)){node.cycle=true;return node;}
+    if(d>=maxDepth){node.truncated=true;return node;}
+    visited.add(t);
+    for(const ni of idx.readsOf[t]||[]){
+      const net=networks[ni];
+      const tgt={block:net.block,network:net.index,title:net.title,gotos:net.gotos,synthetic:net.synthetic,outputs:[]};
+      for(const w of net.writes)tgt.outputs.push(walk(w,d+1));
+      node.targets.push(tgt);
+    }
+    visited.delete(t);
+    return node;
+  }
+  return walk(tag,0);
+}
+
+
+
+/* ============ STAV APLIKÁCIE ============ */
+let BLOCKS=[],NETS=[],VNETS=[],IDX=null,SEL=null,DIR='up',cyInst=null;
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+function ingest(xmlText,fname){
+  const doc=new DOMParser().parseFromString(xmlText,'text/xml');
+  if(doc.getElementsByTagName('parsererror').length) throw new Error('Neplatné XML: '+fname);
+  const m=parseTiaXml(doc,fname);
+  if(!m.blocks.length) throw new Error('V súbore '+fname+' sa nenašiel žiadny blok (OB/FB/FC/DB). Je to SimaticML export?');
+  BLOCKS=BLOCKS.concat(m.blocks); NETS=NETS.concat(m.networks);
+}
+
+function refresh(){
+  VNETS=NETS.concat(expandBindings(BLOCKS,NETS));
+  IDX=buildIndex(VNETS);
+  $('#app').classList.add('on');
+  $('#drop').style.display='none';
+  $('#btnExport').hidden=false;
+  renderTagList($('#q').value);
+  renderXref(); renderNets();
+  const gotoCount=NETS.reduce((a,n)=>a+n.gotos.length,0);
+  const bindCount=VNETS.length-NETS.length;
+  const unsup=NETS.filter(n=>n.unsupported).length;
+  $('#status').textContent=`${BLOCKS.length} blokov · ${NETS.length} networkov · ${IDX.tags.size} tagov · ${bindCount} väzieb volaní`
+    +(gotoCount?` · ${gotoCount}× GOTO`:'')
+    +(unsup?` · ⚠ ${unsup} networkov v nepodporovanom jazyku (STL/GRAPH)`:'');
+  if(SEL&&IDX.tags.has(SEL))renderTrace();
+}
+
+function renderTagList(filter){
+  const q=(filter||'').toLowerCase();
+  const tags=[...IDX.tags].sort().filter(t=>t.toLowerCase().includes(q));
+  $('#taglist').innerHTML=tags.map(t=>{
+    const w=(IDX.writesOf[t]||[]).length,r=(IDX.readsOf[t]||[]).length;
+    return `<button class="tagrow${t===SEL?' sel':''}" data-tag="${esc(t)}">
+      <span class="name">${esc(t)}</span>
+      <span class="cnt w">W&nbsp;<b>${w}</b></span><span class="cnt r">R&nbsp;<b>${r}</b></span></button>`;
+  }).join('')||'<div class="empty">Nič nenájdené.</div>';
+}
+
+function selectTag(t){
+  SEL=t;
+  renderTagList($('#q').value);
+  renderTrace(); renderGraph();
+  showView('trace');
+}
+
+function chip(t,mode,click=true){return `<span class="tagchip ${mode}${click?' click':''}" data-tag="${esc(t)}">${esc(t)}</span>`;}
+
+function branchLabel(b){
+  if(b.synthetic)return (DIR==='up'?'⇐ cez pin volania ':'⇒ cez pin volania ')+`<b>${esc(b.title.replace('CALL ',''))}</b>`;
+  return (DIR==='up'?'⇐ zapisuje':'⇒ číta')+` <b>${esc(b.block)}</b> / Net${b.network}`+(b.title?` — ${esc(b.title)}`:'');
+}
+
+function renderTrace(){
+  if(!SEL){$('#trace').innerHTML='<div class="empty">Vyber tag.</div>';return;}
+  const tree=DIR==='up'?traceUpstream(SEL,VNETS,IDX):traceDownstream(SEL,VNETS,IDX);
+  $('#dirUp').classList.toggle('primary',DIR==='up');
+  $('#dirDown').classList.toggle('primary',DIR!=='up');
+  function nodeHtml(n,root){
+    let h=`<div class="tnode${root?' root':''}"><div class="row">${chip(n.tag,root?'w':(DIR==='up'?'r':'w'),!root)}`;
+    if(n.cycle)h+=`<span class="flag">cyklus ⟲</span>`;
+    if(n.truncated)h+=`<span class="flag">… max hĺbka</span>`;
+    h+=`</div>`;
+    const branches=DIR==='up'?(n.sources||[]):(n.targets||[]);
+    for(const b of branches){
+      h+=`<div class="netline${b.synthetic?' bind':''}">${branchLabel(b)}`+
+         (b.gotos&&b.gotos.length?` <span class="flag goto">GOTO ${esc(b.gotos.join(','))}</span>`:'')+`</div>`;
+      const kids=DIR==='up'?b.inputs:b.outputs;
+      for(const k of kids)h+=nodeHtml(k,false);
+    }
+    if(root&&!branches.length)h+=`<div class="netline">Žiadny network tento tag ${DIR==='up'?'nezapisuje':'nečíta'} — signál ${DIR==='up'?'prichádza zvonka (fyzický vstup / HMI), alebo blok chýba v importe':'nikam nepokračuje v importovaných blokoch'}.</div>`;
+    h+=`</div>`;
+    return h;
+  }
+  $('#trace').innerHTML=nodeHtml(tree,true);
+}
+
+function renderGraph(){
+  if(!SEL)return;
+  const eles=[],seen=new Set();
+  function addTag(t,root){const id='t:'+t;if(!seen.has(id)){seen.add(id);eles.push({data:{id,label:t},classes:root?'seltag':'tag'});}return id;}
+  let nSeq=0;
+  function addNet(b){const id='n:'+(nSeq++);eles.push({data:{id,label:b.synthetic?b.title.replace('CALL ','⇄ '):`${b.block}/Net${b.network}`},classes:'net'});return id;}
+  const tree=DIR==='up'?traceUpstream(SEL,VNETS,IDX,6):traceDownstream(SEL,VNETS,IDX,6);
+  (function walk(node,root){
+    const tid=addTag(node.tag,root);
+    const branches=DIR==='up'?(node.sources||[]):(node.targets||[]);
+    for(const b of branches){
+      const nid=addNet(b);
+      if(DIR==='up')eles.push({data:{id:'e'+eles.length,source:nid,target:tid}});
+      else eles.push({data:{id:'e'+eles.length,source:tid,target:nid}});
+      const kids=DIR==='up'?b.inputs:b.outputs;
+      for(const k of kids){
+        const kid=addTag(k.tag,false);
+        if(DIR==='up')eles.push({data:{id:'e'+eles.length,source:kid,target:nid}});
+        else eles.push({data:{id:'e'+eles.length,source:nid,target:kid}});
+        walk(k,false);
+      }
+    }
+  })(tree,true);
+  if(cyInst)cyInst.destroy();
+  cyInst=cytoscape({
+    container:$('#cy'),elements:eles,
+    style:[
+      {selector:'node',style:{'label':'data(label)','color':'#d8dee6','font-size':'10px','font-family':'monospace',
+        'text-valign':'bottom','text-margin-y':'4px','width':'14px','height':'14px','background-color':'#5fa8e8'}},
+      {selector:'.seltag',style:{'background-color':'#f2a93b','width':'20px','height':'20px','font-weight':'bold'}},
+      {selector:'.net',style:{'background-color':'#4caf7d','shape':'round-rectangle','width':'22px','height':'12px'}},
+      {selector:'edge',style:{'width':1.5,'line-color':'#3a4450','target-arrow-color':'#3a4450','target-arrow-shape':'triangle','curve-style':'bezier','arrow-scale':.8}},
+    ],
+    layout:{name:'breadthfirst',directed:true,spacingFactor:1.2,roots:DIR==='up'?undefined:['t:'+SEL]},
+  });
+  cyInst.on('tap','node',e=>{
+    const id=e.target.id();
+    if(id.startsWith('t:'))selectTag(id.slice(2));
+  });
+}
+
+function renderXref(){
+  const tags=[...IDX.tags].sort();
+  $('#xtab tbody').innerHTML=tags.map(t=>{
+    const fmt=i=>{const n=VNETS[i];return n.synthetic?`<span style="color:var(--green)">⇄ ${esc(n.title)}</span>`:`<b>${esc(n.block)}</b>/Net${n.index}`;};
+    const w=(IDX.writesOf[t]||[]).map(fmt).join('<br>')||'—';
+    const r=(IDX.readsOf[t]||[]).map(fmt).join('<br>')||'—';
+    return `<tr><td class="mono">${chip(t,(IDX.writesOf[t]||[]).length?'w':'r')}</td><td class="mono">${w}</td><td class="mono">${r}</td></tr>`;
+  }).join('');
+}
+
+function renderNets(){
+  $('#ntab tbody').innerHTML=VNETS.map(n=>{
+    const extra=[...(n.calls||[]).map(c=>'CALL '+esc(c)),
+                 ...(n.gotos||[]).map(g=>`<span class="flag goto">GOTO ${esc(g)}</span>`),
+                 ...(n.labels||[]).map(l=>`<span class="flag">label ${esc(l)}</span>`),
+                 ...(n.unsupported?[`<span class="flag warn">${esc(n.unsupported)} — nepodporované</span>`]:[]),
+                 ...(n.synthetic?[`<span class="flag bind">väzba volania</span>`]:[])].join(' ')||'—';
+    return `<tr${n.synthetic?' class="synth"':''}><td class="mono"><b>${esc(n.block)}</b>/Net${n.index}</td><td>${esc(n.title)||'—'}</td>
+      <td class="mono">${(n.reads||[]).map(t=>chip(t,'r')).join(' ')||'—'}</td>
+      <td class="mono">${(n.writes||[]).map(t=>chip(t,'w')).join(' ')||'—'}</td>
+      <td class="mono">${extra}</td></tr>`;
+  }).join('');
+}
+
+function showView(v){
+  document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.v===v));
+  document.querySelectorAll('.view').forEach(x=>x.classList.toggle('on',x.id==='view-'+v));
+  if(v==='graph'){renderGraph();if(cyInst)setTimeout(()=>cyInst.resize(),0);}
+}
+
+/* ============ UDALOSTI ============ */
+document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>showView(b.dataset.v));
+$('#q').oninput=e=>renderTagList(e.target.value);
+document.body.addEventListener('click',e=>{
+  const chipEl=e.target.closest('.tagchip.click'),row=e.target.closest('.tagrow');
+  if(chipEl)selectTag(chipEl.dataset.tag);
+  else if(row)selectTag(row.dataset.tag);
+});
+$('#dirUp').onclick=()=>{DIR='up';renderTrace();renderGraph();};
+$('#dirDown').onclick=()=>{DIR='down';renderTrace();renderGraph();};
+
+$('#file').onchange=async e=>{await loadFiles(e.target.files);e.target.value='';};
+const drop=$('#drop');
+['dragover','dragenter'].forEach(ev=>document.body.addEventListener(ev,e=>{e.preventDefault();drop.classList.add('over');}));
+['dragleave','drop'].forEach(ev=>document.body.addEventListener(ev,e=>{e.preventDefault();if(ev==='drop')return;drop.classList.remove('over');}));
+document.body.addEventListener('drop',async e=>{e.preventDefault();drop.classList.remove('over');await loadFiles(e.dataTransfer.files);});
+
+async function loadFiles(list){
+  const errs=[];
+  for(const f of list){
+    if(!/\.xml$/i.test(f.name)){errs.push(f.name+': nie je .xml');continue;}
+    try{ingest(await f.text(),f.name);}catch(err){errs.push(err.message);}
+  }
+  if(BLOCKS.length)refresh();
+  if(errs.length)alert('Niektoré súbory sa nepodarilo načítať:\n'+errs.join('\n'));
+}
+
+$('#btnExport').onclick=()=>{
+  const data=JSON.stringify({blocks:BLOCKS,networks:VNETS},null,2);
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([data],{type:'application/json'}));
+  a.download='tia-xref-model.json';a.click();URL.revokeObjectURL(a.href);
+};
+
+/* ============ DEMO DÁTA ============ */
+$('#btnDemo').onclick=()=>{
+  try{
+    ingest(DEMO_FB_MOTOR,'demo/FB_Motor.xml');
+    ingest(DEMO_SAFETY_OB,'demo/FB_Safety_a_OB1.xml');
+    refresh();
+    selectTag('Q_Motor_Contactor');
+  }catch(e){alert(e.message);}
+};
+const DEMO_FB_MOTOR=`<?xml version="1.0" encoding="utf-8"?>
+<Document>
+  <Engineering version="V17" />
+  <SW.Blocks.FB ID="0">
+    <AttributeList>
+      <Name>FB_Motor</Name>
+      <Number>201</Number>
+      <ProgrammingLanguage>LAD</ProgrammingLanguage>
+      <Interface><Sections xmlns="http://www.siemens.com/automation/Openness/SW/Interface/v4">
+        <Section Name="Input">
+          <Member Name="Start_Req" Datatype="Bool" />
+          <Member Name="Auto_Mode" Datatype="Bool" />
+        </Section>
+        <Section Name="Output">
+          <Member Name="Motor_Run" Datatype="Bool" />
+        </Section>
+        <Section Name="Static">
+          <Member Name="StartDelay" Datatype="TON_TIME" />
+        </Section>
+      </Sections></Interface>
+    </AttributeList>
+    <ObjectList>
+      <SW.Blocks.CompileUnit ID="3" CompositionName="CompileUnits">
+        <AttributeList>
+          <NetworkSource>
+            <FlgNet xmlns="http://www.siemens.com/automation/Openness/SW/NetworkSource/FlgNet/v4">
+              <Parts>
+                <Access Scope="GlobalVariable" UId="21">
+                  <Symbol>
+                    <Component Name="DB_Safety" />
+                    <Component Name="Safety_OK" />
+                  </Symbol>
+                </Access>
+                <Access Scope="LocalVariable" UId="22">
+                  <Symbol><Component Name="Start_Req" /></Symbol>
+                </Access>
+                <Access Scope="LocalVariable" UId="23">
+                  <Symbol><Component Name="Auto_Mode" /></Symbol>
+                </Access>
+                <Access Scope="GlobalVariable" UId="24">
+                  <Symbol>
+                    <Component Name="DB_Motor" />
+                    <Component Name="Cmd_Start" />
+                  </Symbol>
+                </Access>
+                <Part Name="Contact" UId="31" />
+                <Part Name="Contact" UId="32" />
+                <Part Name="Contact" UId="33" />
+                <Part Name="Coil" UId="34" />
+              </Parts>
+              <Wires>
+                <Wire UId="41"><Powerrail /><NameCon UId="31" Name="in" /></Wire>
+                <Wire UId="42"><IdentCon UId="21" /><NameCon UId="31" Name="operand" /></Wire>
+                <Wire UId="43"><NameCon UId="31" Name="out" /><NameCon UId="32" Name="in" /></Wire>
+                <Wire UId="44"><IdentCon UId="22" /><NameCon UId="32" Name="operand" /></Wire>
+                <Wire UId="45"><NameCon UId="32" Name="out" /><NameCon UId="33" Name="in" /></Wire>
+                <Wire UId="46"><IdentCon UId="23" /><NameCon UId="33" Name="operand" /></Wire>
+                <Wire UId="47"><NameCon UId="33" Name="out" /><NameCon UId="34" Name="in" /></Wire>
+                <Wire UId="48"><IdentCon UId="24" /><NameCon UId="34" Name="operand" /></Wire>
+              </Wires>
+            </FlgNet>
+          </NetworkSource>
+        </AttributeList>
+        <ObjectList>
+          <MultilingualText ID="A" CompositionName="Title">
+            <ObjectList>
+              <MultilingualTextItem ID="B" CompositionName="Items">
+                <AttributeList>
+                  <Culture>en-US</Culture>
+                  <Text>Start command interlock</Text>
+                </AttributeList>
+              </MultilingualTextItem>
+            </ObjectList>
+          </MultilingualText>
+        </ObjectList>
+      </SW.Blocks.CompileUnit>
+      <SW.Blocks.CompileUnit ID="4" CompositionName="CompileUnits">
+        <AttributeList>
+          <NetworkSource>
+            <FlgNet xmlns="http://www.siemens.com/automation/Openness/SW/NetworkSource/FlgNet/v4">
+              <Parts>
+                <Access Scope="GlobalVariable" UId="21">
+                  <Symbol>
+                    <Component Name="DB_Motor" />
+                    <Component Name="Cmd_Start" />
+                  </Symbol>
+                </Access>
+                <Access Scope="GlobalVariable" UId="22">
+                  <Symbol>
+                    <Component Name="DB_Motor" />
+                    <Component Name="Fault" />
+                  </Symbol>
+                </Access>
+                <Access Scope="LocalVariable" UId="23">
+                  <Symbol><Component Name="Motor_Run" /></Symbol>
+                </Access>
+                <Access Scope="GlobalVariable" UId="24">
+                  <Symbol><Component Name="Q_Motor_Contactor" /></Symbol>
+                </Access>
+                <Part Name="Contact" UId="31" />
+                <Part Name="Contact" UId="32">
+                  <Negated Name="operand" />
+                </Part>
+                <Part Name="Coil" UId="33" />
+                <Part Name="Coil" UId="34" />
+              </Parts>
+              <Wires>
+                <Wire UId="41"><Powerrail /><NameCon UId="31" Name="in" /></Wire>
+                <Wire UId="42"><IdentCon UId="21" /><NameCon UId="31" Name="operand" /></Wire>
+                <Wire UId="43"><NameCon UId="31" Name="out" /><NameCon UId="32" Name="in" /></Wire>
+                <Wire UId="44"><IdentCon UId="22" /><NameCon UId="32" Name="operand" /></Wire>
+                <Wire UId="45"><NameCon UId="32" Name="out" /><NameCon UId="33" Name="in" /></Wire>
+                <Wire UId="46"><IdentCon UId="23" /><NameCon UId="33" Name="operand" /></Wire>
+                <Wire UId="47"><NameCon UId="32" Name="out" /><NameCon UId="34" Name="in" /></Wire>
+                <Wire UId="48"><IdentCon UId="24" /><NameCon UId="34" Name="operand" /></Wire>
+              </Wires>
+            </FlgNet>
+          </NetworkSource>
+        </AttributeList>
+        <ObjectList>
+          <MultilingualText ID="C" CompositionName="Title">
+            <ObjectList>
+              <MultilingualTextItem ID="D" CompositionName="Items">
+                <AttributeList>
+                  <Culture>en-US</Culture>
+                  <Text>Motor output</Text>
+                </AttributeList>
+              </MultilingualTextItem>
+            </ObjectList>
+          </MultilingualText>
+        </ObjectList>
+      </SW.Blocks.CompileUnit>
+    </ObjectList>
+  </SW.Blocks.FB>
+</Document>
+`;
+const DEMO_SAFETY_OB=`<?xml version="1.0" encoding="utf-8"?>
+<Document>
+  <Engineering version="V17" />
+  <SW.Blocks.FB ID="0">
+    <AttributeList>
+      <Name>FB_Safety</Name>
+      <Number>100</Number>
+      <ProgrammingLanguage>SCL</ProgrammingLanguage>
+      <Interface><Sections xmlns="http://www.siemens.com/automation/Openness/SW/Interface/v4">
+        <Section Name="Input">
+          <Member Name="EStop_Ch1" Datatype="Bool" />
+          <Member Name="EStop_Ch2" Datatype="Bool" />
+        </Section>
+      </Sections></Interface>
+    </AttributeList>
+    <ObjectList>
+      <SW.Blocks.CompileUnit ID="3" CompositionName="CompileUnits">
+        <AttributeList>
+          <NetworkSource>
+            <StructuredText xmlns="http://www.siemens.com/automation/Openness/SW/NetworkSource/StructuredText/v3">
+              <Token Text="IF" UId="21" />
+              <Blank UId="22" />
+              <Access Scope="GlobalVariable" UId="23">
+                <Symbol UId="24"><Component Name="I_EStop_Button" UId="25" /></Symbol>
+              </Access>
+              <Blank UId="26" />
+              <Token Text="AND" UId="27" />
+              <Blank UId="28" />
+              <Access Scope="LocalVariable" UId="29">
+                <Symbol UId="30"><Component Name="EStop_Ch1" UId="31" /></Symbol>
+              </Access>
+              <Blank UId="32" />
+              <Token Text="AND" UId="33" />
+              <Blank UId="34" />
+              <Access Scope="LocalVariable" UId="35">
+                <Symbol UId="36"><Component Name="EStop_Ch2" UId="37" /></Symbol>
+              </Access>
+              <Blank UId="38" />
+              <Token Text="THEN" UId="39" />
+              <NewLine UId="40" />
+              <Blank Num="4" UId="41" />
+              <Access Scope="GlobalVariable" UId="42">
+                <Symbol UId="43">
+                  <Component Name="DB_Safety" UId="44" />
+                  <Component Name="Safety_OK" UId="45" />
+                </Symbol>
+              </Access>
+              <Blank UId="46" />
+              <Token Text=":=" UId="47" />
+              <Blank UId="48" />
+              <Token Text="TRUE" UId="49" />
+              <Token Text=";" UId="50" />
+              <NewLine UId="51" />
+              <Token Text="ELSE" UId="52" />
+              <NewLine UId="53" />
+              <Blank Num="4" UId="54" />
+              <Token Text="GOTO" UId="55" />
+              <Blank UId="56" />
+              <Token Text="FAULT_EXIT" UId="57" />
+              <Token Text=";" UId="58" />
+              <NewLine UId="59" />
+              <Token Text="END_IF" UId="60" />
+              <Token Text=";" UId="61" />
+              <NewLine UId="62" />
+              <Token Text="RETURN" UId="63" />
+              <Token Text=";" UId="64" />
+              <NewLine UId="65" />
+              <Token Text="FAULT_EXIT" UId="66" />
+              <Token Text=":" UId="67" />
+              <NewLine UId="68" />
+              <Access Scope="GlobalVariable" UId="69">
+                <Symbol UId="70">
+                  <Component Name="DB_Safety" UId="71" />
+                  <Component Name="Safety_OK" UId="72" />
+                </Symbol>
+              </Access>
+              <Blank UId="73" />
+              <Token Text=":=" UId="74" />
+              <Blank UId="75" />
+              <Token Text="FALSE" UId="76" />
+              <Token Text=";" UId="77" />
+              <NewLine UId="78" />
+              <Access Scope="GlobalVariable" UId="79">
+                <Symbol UId="80">
+                  <Component Name="DB_Safety" UId="81" />
+                  <Component Name="Fault_Latch" UId="82" />
+                </Symbol>
+              </Access>
+              <Blank UId="83" />
+              <Token Text=":=" UId="84" />
+              <Blank UId="85" />
+              <Token Text="TRUE" UId="86" />
+              <Token Text=";" UId="87" />
+            </StructuredText>
+          </NetworkSource>
+        </AttributeList>
+        <ObjectList>
+          <MultilingualText ID="A" CompositionName="Title">
+            <ObjectList>
+              <MultilingualTextItem ID="B" CompositionName="Items">
+                <AttributeList>
+                  <Culture>en-US</Culture>
+                  <Text>E-Stop evaluation with fault exit</Text>
+                </AttributeList>
+              </MultilingualTextItem>
+            </ObjectList>
+          </MultilingualText>
+        </ObjectList>
+      </SW.Blocks.CompileUnit>
+    </ObjectList>
+  </SW.Blocks.FB>
+  <SW.Blocks.OB ID="100">
+    <AttributeList>
+      <Name>Main</Name>
+      <Number>1</Number>
+      <ProgrammingLanguage>LAD</ProgrammingLanguage>
+    </AttributeList>
+    <ObjectList>
+      <SW.Blocks.CompileUnit ID="103" CompositionName="CompileUnits">
+        <AttributeList>
+          <NetworkSource>
+            <FlgNet xmlns="http://www.siemens.com/automation/Openness/SW/NetworkSource/FlgNet/v4">
+              <Parts>
+                <Access Scope="GlobalVariable" UId="21">
+                  <Symbol><Component Name="I_Start_Button" /></Symbol>
+                </Access>
+                <Access Scope="GlobalVariable" UId="22">
+                  <Symbol><Component Name="HMI_Auto_Mode" /></Symbol>
+                </Access>
+                <Access Scope="GlobalVariable" UId="23">
+                  <Symbol><Component Name="M1_Running" /></Symbol>
+                </Access>
+                <Call UId="31">
+                  <CallInfo Name="FB_Motor" BlockType="FB">
+                    <Instance Scope="GlobalVariable" UId="32">
+                      <Component Name="DB_Motor_Inst" />
+                    </Instance>
+                    <Parameter Name="Start_Req" Section="Input" Type="Bool" />
+                    <Parameter Name="Auto_Mode" Section="Input" Type="Bool" />
+                    <Parameter Name="Motor_Run" Section="Output" Type="Bool" />
+                  </CallInfo>
+                </Call>
+              </Parts>
+              <Wires>
+                <Wire UId="41"><Powerrail /><NameCon UId="31" Name="en" /></Wire>
+                <Wire UId="42"><IdentCon UId="21" /><NameCon UId="31" Name="Start_Req" /></Wire>
+                <Wire UId="43"><IdentCon UId="22" /><NameCon UId="31" Name="Auto_Mode" /></Wire>
+                <Wire UId="44"><NameCon UId="31" Name="Motor_Run" /><IdentCon UId="23" /></Wire>
+              </Wires>
+            </FlgNet>
+          </NetworkSource>
+        </AttributeList>
+        <ObjectList>
+          <MultilingualText ID="E" CompositionName="Title">
+            <ObjectList>
+              <MultilingualTextItem ID="F" CompositionName="Items">
+                <AttributeList>
+                  <Culture>en-US</Culture>
+                  <Text>Call motor control</Text>
+                </AttributeList>
+              </MultilingualTextItem>
+            </ObjectList>
+          </MultilingualText>
+        </ObjectList>
+      </SW.Blocks.CompileUnit>
+    </ObjectList>
+  </SW.Blocks.OB>
+</Document>
+`;
+</script>
+</body>
+</html>
