@@ -18,8 +18,6 @@ html,body{height:100%}
 body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:14px}
 button{font:inherit;cursor:pointer}
 a{color:var(--blue)}
-
-/* horná lišta */
 header{display:flex;align-items:center;gap:14px;padding:10px 16px;border-bottom:1px solid var(--line);background:var(--panel)}
 .logo{font-family:var(--mono);font-weight:700;letter-spacing:.06em}
 .logo .x{color:var(--amber)}
@@ -29,14 +27,10 @@ header .spacer{flex:1}
 .btn:hover{border-color:var(--dim)}
 .btn:focus-visible,input:focus-visible{outline:2px solid var(--amber);outline-offset:1px}
 .btn.primary{background:var(--amber);border-color:var(--amber);color:#1a1207;font-weight:600}
-
-/* drop zóna */
 #drop{border:1.5px dashed var(--line);border-radius:10px;margin:18px;padding:34px 20px;text-align:center;color:var(--dim);transition:border-color .15s,background .15s}
 #drop.over{border-color:var(--amber);background:#1a1c17;color:var(--text)}
 #drop strong{color:var(--text)}
 #drop .hint{font-size:12px;margin-top:8px}
-
-/* layout */
 #app{display:none;height:calc(100% - 57px)}
 #app.on{display:flex}
 aside{width:300px;min-width:230px;border-right:1px solid var(--line);display:flex;flex-direction:column;background:var(--panel)}
@@ -50,7 +44,6 @@ aside input{width:100%;background:var(--bg);border:1px solid var(--line);border-
 .cnt{font-size:10.5px;color:var(--dim)}
 .cnt b{font-weight:600}
 .cnt.w b{color:var(--amber)} .cnt.r b{color:var(--blue)}
-
 main{flex:1;display:flex;flex-direction:column;min-width:0}
 nav{display:flex;gap:2px;padding:8px 14px 0;border-bottom:1px solid var(--line)}
 nav button{background:none;border:0;color:var(--dim);padding:8px 12px;border-bottom:2px solid transparent}
@@ -58,16 +51,13 @@ nav button.on{color:var(--text);border-bottom-color:var(--amber)}
 .view{flex:1;overflow:auto;padding:16px;display:none}
 .view.on{display:block}
 #view-graph.on{display:flex;flex-direction:column}
-
 .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);margin-bottom:8px}
 .tagchip{font-family:var(--mono);font-size:12.5px;padding:1px 7px;border-radius:5px;border:1px solid var(--line);background:var(--panel2)}
 .tagchip.w{border-color:#5c4413;color:var(--amber)}
 .tagchip.r{border-color:#1f3c57;color:var(--blue)}
 .tagchip.click{cursor:pointer}
 .tagchip.click:hover{border-color:var(--dim)}
-
-/* trasovací strom — „power rail" */
-.dir-toggle{display:flex;gap:8px;margin:6px 0 16px}
+.dir-toggle{display:flex;gap:8px;margin:6px 0 16px;flex-wrap:wrap}
 .tree{font-family:var(--mono);font-size:13px}
 .tnode{position:relative;padding-left:22px;margin:2px 0}
 .tnode::before{content:"";position:absolute;left:6px;top:0;bottom:0;width:2px;background:var(--line)}
@@ -76,17 +66,18 @@ nav button.on{color:var(--text);border-bottom-color:var(--amber)}
 .netline{color:var(--dim);font-size:12px;padding:2px 0 2px 22px;position:relative}
 .netline::before{content:"";position:absolute;left:6px;top:50%;width:12px;height:2px;background:var(--line)}
 .netline b{color:var(--text);font-weight:600}
+.netline.bind b{color:var(--green)}
 .flag{font-size:10.5px;color:var(--dim);border:1px solid var(--line);border-radius:4px;padding:0 5px}
 .flag.goto{color:var(--red);border-color:#5a2c26}
+.flag.warn{color:var(--red);border-color:#5a2c26}
+.flag.bind{color:var(--green);border-color:#245139}
 .empty{color:var(--dim);padding:30px;text-align:center}
-
-/* tabuľky */
 table{border-collapse:collapse;width:100%;font-size:13px}
 th,td{border-bottom:1px solid var(--line);padding:7px 10px;text-align:left;vertical-align:top}
 th{color:var(--dim);font-weight:500;font-size:11.5px;text-transform:uppercase;letter-spacing:.08em}
 td.mono{font-family:var(--mono);font-size:12.5px}
 tr:hover td{background:var(--panel)}
-
+tr.synth td{color:var(--dim)}
 #cy{flex:1;min-height:340px;border:1px solid var(--line);border-radius:8px;background:var(--panel)}
 .legend{display:flex;gap:16px;padding:8px 2px;color:var(--dim);font-size:12px}
 .dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px;vertical-align:-1px}
@@ -98,7 +89,7 @@ footer{padding:6px 16px;border-top:1px solid var(--line);color:var(--dim);font-s
 <body>
 
 <header>
-  <div class="logo">TIA<span class="x">·</span>XREF<small>trasovanie signálov v PLC projekte</small></div>
+  <div class="logo">TIA<span class="x">·</span>XREF<small>trasovanie signálov v PLC projekte · v0.2</small></div>
   <div class="spacer"></div>
   <button class="btn" id="btnDemo">Načítať demo</button>
   <button class="btn" id="btnExport" hidden>Export JSON</button>
@@ -108,8 +99,9 @@ footer{padding:6px 16px;border-top:1px solid var(--line);color:var(--dim);font-s
 
 <div id="drop">
   <strong>Sem pretiahni XML exporty blokov z TIA Portalu</strong>
-  <div class="hint">TIA Portal → pravý klik na blok → Generate source / Export block as XML (SimaticML).<br>
-  Všetko sa spracuje v tvojom prehliadači — kód nikam neodchádza.</div>
+  <div class="hint">TIA Portal → pravý klik na blok → Export block as XML (SimaticML).<br>
+  Všetko sa spracuje v tvojom prehliadači — kód nikam neodchádza.<br>
+  Tip: importuj aj volané FB/FC — trasovanie potom prejde cez piny volaní.</div>
 </div>
 
 <div id="app">
@@ -139,18 +131,18 @@ footer{padding:6px 16px;border-top:1px solid var(--line);color:var(--dim);font-s
       <div class="legend">
         <span><span class="dot" style="background:var(--amber)"></span>vybraný tag</span>
         <span><span class="dot" style="background:var(--blue)"></span>tag</span>
-        <span><span class="dot" style="background:var(--green)"></span>network (blok/net)</span>
+        <span><span class="dot" style="background:var(--green)"></span>network / väzba volania</span>
       </div>
       <div id="cy"></div>
     </div>
 
     <div class="view" id="view-xref">
-      <div class="eyebrow">Cross-reference — všetky tagy</div>
+      <div class="eyebrow">Cross-reference — všetky tagy · lokálne premenné blokov sú zapísané ako Blok.#Premenná</div>
       <table id="xtab"><thead><tr><th>Tag</th><th>Zápis (kde)</th><th>Čítanie (kde)</th></tr></thead><tbody></tbody></table>
     </div>
 
     <div class="view" id="view-nets">
-      <div class="eyebrow">Naparsované networky</div>
+      <div class="eyebrow">Naparsované networky a väzby volaní</div>
       <table id="ntab"><thead><tr><th>Blok / Net</th><th>Titulok</th><th>Číta</th><th>Zapisuje</th><th>Volá / skoky</th></tr></thead><tbody></tbody></table>
     </div>
   </main>
@@ -159,7 +151,8 @@ footer{padding:6px 16px;border-top:1px solid var(--line);color:var(--dim);font-s
 <footer id="status">Žiadne dáta. Pridaj XML alebo si pozri demo.</footer>
 
 <script>
-/* ============ PARSER (SimaticML) ============ */
+/* TIA XRef v0.2 — parser jadra. Čisté DOM API, beží v prehliadači aj v Node (s xmldom). */
+
 const COIL_PARTS = new Set(['Coil','SCoil','RCoil','Set','Reset','SetCoil','ResetCoil','SdCoil','SfCoil']);
 const BLOCK_TAGS = ['SW.Blocks.OB','SW.Blocks.FB','SW.Blocks.FC','SW.Blocks.GlobalDB'];
 const KEYWORDS = new Set(['IF','THEN','ELSE','ELSIF','END_IF','CASE','OF','END_CASE','FOR','TO','BY','DO','END_FOR','WHILE','END_WHILE','REPEAT','UNTIL','END_REPEAT','RETURN','TRUE','FALSE','AND','OR','XOR','NOT','MOD','GOTO']);
@@ -170,9 +163,17 @@ function els(node,name){ const o=[]; for(let c=node.firstChild;c;c=c.nextSibling
 function descendants(node,name){ const o=[]; (function w(n){ for(let c=n.firstChild;c;c=c.nextSibling) if(c.nodeType===1){ if(localName(c)===name)o.push(c); w(c);} })(node); return o; }
 const text = n => n ? (n.textContent||'').trim() : '';
 
-function accessName(a){
+/* Access → plný názov tagu. Lokálne premenné sú kvalifikované blokom: "FB_Motor.#Start_Req". */
+function accessName(a, blockName){
+  const scope = a.getAttribute('Scope');
+  if(scope==='LiteralConstant'||scope==='TypedConstant'||scope==='LocalConstant'||scope==='GlobalConstant') return null;
   const sym = el(a,'Symbol');
-  if(sym) return els(sym,'Component').map(c=>c.getAttribute('Name')).join('.');
+  if(sym){
+    const name = els(sym,'Component').map(c=>c.getAttribute('Name')).join('.');
+    if(!name) return null;
+    if(scope==='LocalVariable') return blockName + '.#' + name;
+    return name;
+  }
   const addr = el(a,'Address');
   if(addr){
     const map={Input:'I',Output:'Q',Memory:'M'};
@@ -183,17 +184,19 @@ function accessName(a){
 }
 
 function addRef(net,tag,mode){
+  if(!tag)return;
   const k=tag+'|'+mode;
   if(net._seen.has(k))return;
   net._seen.add(k);
   (mode==='write'?net.writes:net.reads).push(tag);
 }
 
+/* ---------- FlgNet (LAD/FBD) ---------- */
 function parseFlgNet(flg,net){
   const parts=el(flg,'Parts'), wires=el(flg,'Wires');
   if(!parts)return;
   const accessByUId={},partByUId={},callParamDir={};
-  for(const a of els(parts,'Access')){ const n=accessName(a); if(n)accessByUId[a.getAttribute('UId')]=n; }
+  for(const a of els(parts,'Access')){ const n=accessName(a,net.block); if(n)accessByUId[a.getAttribute('UId')]=n; }
   for(const p of els(parts,'Part')) partByUId[p.getAttribute('UId')]={kind:'Part',name:p.getAttribute('Name')};
   for(const c of els(parts,'Call')){
     const uid=c.getAttribute('UId'), info=el(c,'CallInfo');
@@ -201,7 +204,7 @@ function parseFlgNet(flg,net){
     if(info){
       net.calls.push(info.getAttribute('Name'));
       callParamDir[uid]={};
-      for(const prm of els(info,'Parameter')) callParamDir[uid][prm.getAttribute('Name')]=prm.getAttribute('Section')||'Input';
+      for(const prm of els(info,'Parameter')) callParamDir[uid][prm.getAttribute('Name')]=prm.getAttribute('Section')||null;
       const inst=el(info,'Instance');
       if(inst){ const iname=els(inst,'Component').map(x=>x.getAttribute('Name')).join('.'); if(iname)net.instances.push(iname); }
     }
@@ -211,16 +214,37 @@ function parseFlgNet(flg,net){
     const ident=el(w,'IdentCon'); if(!ident)continue;
     const tag=accessByUId[ident.getAttribute('UId')]; if(!tag)continue;
     for(const con of els(w,'NameCon')){
-      const part=partByUId[con.getAttribute('UId')], port=con.getAttribute('Name')||'';
+      const uid=con.getAttribute('UId');
+      const part=partByUId[uid], port=con.getAttribute('Name')||'';
       if(!part)continue;
-      let isWrite=false;
       if(part.kind==='Call'){
-        const dir=(callParamDir[con.getAttribute('UId')]||{})[port];
-        if(dir==='InOut'){ addRef(net,tag,'read'); isWrite=true; }
-        else isWrite = dir==='Output';
-      } else if(COIL_PARTS.has(part.name)) isWrite=/^operand$/i.test(port);
+        if(/^en$/i.test(port)){ addRef(net,tag,'read'); continue; }
+        if(/^eno$/i.test(port)){ addRef(net,tag,'write'); continue; }
+        // väzba formal ↔ actual — vyrieši sa po naparsovaní všetkých blokov
+        net.bindings.push({callee:part.name, port, actual:tag, dir:(callParamDir[uid]||{})[port]||null});
+        continue;
+      }
+      let isWrite=false;
+      if(COIL_PARTS.has(part.name)) isWrite=/^operand$/i.test(port);
       else isWrite=/^out\d*$/i.test(port);
       addRef(net,tag,isWrite?'write':'read');
+    }
+  }
+}
+
+/* ---------- StructuredText (SCL) ---------- */
+function handleSclCall(a,net){
+  const info = el(a,'CallInfo') || descendants(a,'CallInfo')[0];
+  if(!info)return;
+  const callee = info.getAttribute('Name') || '?';
+  net.calls.push(callee);
+  const inst = el(info,'Instance');
+  if(inst){ const iname=els(inst,'Component').map(x=>x.getAttribute('Name')).join('.'); if(iname)net.instances.push(iname); }
+  for(const prm of descendants(info,'Parameter')){
+    const port = prm.getAttribute('Name'), dir = prm.getAttribute('Section')||null;
+    for(const inner of descendants(prm,'Access')){
+      const actual = accessName(inner,net.block);
+      if(actual) net.bindings.push({callee, port, actual, dir});
     }
   }
 }
@@ -230,7 +254,10 @@ function parseSCL(st,net){
   for(let c=st.firstChild;c;c=c.nextSibling){
     if(c.nodeType!==1)continue;
     const ln=localName(c);
-    if(ln==='Access')items.push({t:'access',name:accessName(c)});
+    if(ln==='Access'){
+      if(c.getAttribute('Scope')==='Call'){ handleSclCall(c,net); continue; }
+      items.push({t:'access',name:accessName(c,net.block)});
+    }
     else if(ln==='Token')items.push({t:'tok',v:(c.getAttribute('Text')||'').trim()});
   }
   for(let i=0;i<items.length;i++){
@@ -248,6 +275,7 @@ function parseSCL(st,net){
   }
 }
 
+/* ---------- bloky a networky ---------- */
 function netTitle(cu){
   const ol=el(cu,'ObjectList'); if(!ol)return'';
   for(const mt of els(ol,'MultilingualText'))
@@ -262,18 +290,28 @@ function parseTiaXml(doc,sourceFile){
     for(const b of descendants(root,tag)){
       const attrs=el(b,'AttributeList'); if(!attrs)continue;
       const block={name:text(el(attrs,'Name')),number:text(el(attrs,'Number')),
-        type:tag.replace('SW.Blocks.',''),lang:text(el(attrs,'ProgrammingLanguage'))||(tag.endsWith('GlobalDB')?'DB':'?'),file:sourceFile};
+        type:tag.replace('SW.Blocks.',''),lang:text(el(attrs,'ProgrammingLanguage'))||(tag.endsWith('GlobalDB')?'DB':'?'),
+        file:sourceFile,interface:[]};
+      const iface=el(attrs,'Interface');
+      if(iface) for(const sec of descendants(iface,'Section'))
+        for(const m of els(sec,'Member'))
+          block.interface.push({section:sec.getAttribute('Name'),name:m.getAttribute('Name'),type:m.getAttribute('Datatype')});
       model.blocks.push(block);
       const ol=el(b,'ObjectList'); if(!ol)continue;
       let idx=0;
       for(const cu of els(ol,'SW.Blocks.CompileUnit')){
         idx++;
-        const net={block:block.name,index:idx,title:netTitle(cu),reads:[],writes:[],calls:[],instances:[],labels:[],gotos:[],_seen:new Set()};
+        const net={block:block.name,index:idx,title:netTitle(cu),reads:[],writes:[],calls:[],instances:[],
+                   labels:[],gotos:[],bindings:[],unsupported:null,_seen:new Set()};
         const nsrc=descendants(cu,'NetworkSource')[0];
         if(nsrc){
           const flg=descendants(nsrc,'FlgNet')[0], st=descendants(nsrc,'StructuredText')[0];
-          if(flg)parseFlgNet(flg,net); else if(st)parseSCL(st,net);
+          if(flg)parseFlgNet(flg,net);
+          else if(st)parseSCL(st,net);
+          else if(descendants(nsrc,'StatementList')[0])net.unsupported='STL';
+          else if(nsrc.firstChild)net.unsupported=localName(descendants(nsrc,'*')[0]||nsrc)||'?';
         }
+        if(block.lang==='GRAPH')net.unsupported='GRAPH';
         delete net._seen;
         model.networks.push(net);
       }
@@ -282,7 +320,31 @@ function parseTiaXml(doc,sourceFile){
   return model;
 }
 
-/* ============ XREF INDEX + TRASOVANIE ============ */
+/* ---------- väzby volaní: formal ↔ actual ----------
+   Pre každé volanie vzniknú syntetické „väzbové networky":
+   Input : actual → CALLEE.#param        (zápis do formálneho vstupu)
+   Output: CALLEE.#param → actual        (formálny výstup zapisuje actual)
+   InOut : oba smery.
+   Ak smer nie je v XML, dohľadá sa v interface volaného bloku (ak je importovaný). */
+function expandBindings(blocks,networks){
+  const ifaceDir={};
+  for(const b of blocks) for(const m of b.interface||[])
+    ifaceDir[b.name+'|'+m.name]=m.section;
+  const out=[];
+  for(const net of networks){
+    for(const bd of net.bindings||[]){
+      let dir=bd.dir||ifaceDir[bd.callee+'|'+bd.port]||'Input';
+      const formal=bd.callee+'.#'+bd.port;
+      const base={block:net.block,index:net.index,title:'CALL '+bd.callee+' · pin '+bd.port,
+                  calls:[],instances:[],labels:[],gotos:[],bindings:[],unsupported:null,synthetic:true};
+      if(dir==='Input'||dir==='InOut') out.push({...base,reads:[bd.actual],writes:[formal]});
+      if(dir==='Output'||dir==='InOut'||dir==='Return') out.push({...base,reads:[formal],writes:[bd.actual]});
+    }
+  }
+  return out;
+}
+
+/* ---------- xref index + dependency engine ---------- */
 function buildIndex(networks){
   const idx={readsOf:{},writesOf:{},tags:new Set()};
   networks.forEach((net,i)=>{
@@ -300,7 +362,7 @@ function traceUpstream(tag,networks,idx,maxDepth=8){
     visited.add(t);
     for(const ni of idx.writesOf[t]||[]){
       const net=networks[ni];
-      const src={block:net.block,network:net.index,title:net.title,gotos:net.gotos,inputs:[]};
+      const src={block:net.block,network:net.index,title:net.title,gotos:net.gotos,synthetic:net.synthetic,inputs:[]};
       for(const r of net.reads)src.inputs.push(walk(r,d+1));
       node.sources.push(src);
     }
@@ -318,7 +380,7 @@ function traceDownstream(tag,networks,idx,maxDepth=8){
     visited.add(t);
     for(const ni of idx.readsOf[t]||[]){
       const net=networks[ni];
-      const tgt={block:net.block,network:net.index,title:net.title,gotos:net.gotos,outputs:[]};
+      const tgt={block:net.block,network:net.index,title:net.title,gotos:net.gotos,synthetic:net.synthetic,outputs:[]};
       for(const w of net.writes)tgt.outputs.push(walk(w,d+1));
       node.targets.push(tgt);
     }
@@ -328,13 +390,15 @@ function traceDownstream(tag,networks,idx,maxDepth=8){
   return walk(tag,0);
 }
 
+
+
 /* ============ STAV APLIKÁCIE ============ */
-let BLOCKS=[],NETS=[],IDX=null,SEL=null,DIR='up',cyInst=null;
+let BLOCKS=[],NETS=[],VNETS=[],IDX=null,SEL=null,DIR='up',cyInst=null;
 const $=s=>document.querySelector(s);
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
 function ingest(xmlText,fname){
-  const doc=new DOMParser().parseFromString(xmlText,'text/xml');
+  const doc=new DOMParser().parseFromString(xmlText.replace(/^\uFEFF/,''),'text/xml');
   if(doc.getElementsByTagName('parsererror').length) throw new Error('Neplatné XML: '+fname);
   const m=parseTiaXml(doc,fname);
   if(!m.blocks.length) throw new Error('V súbore '+fname+' sa nenašiel žiadny blok (OB/FB/FC/DB). Je to SimaticML export?');
@@ -342,14 +406,19 @@ function ingest(xmlText,fname){
 }
 
 function refresh(){
-  IDX=buildIndex(NETS);
+  VNETS=NETS.concat(expandBindings(BLOCKS,NETS));
+  IDX=buildIndex(VNETS);
   $('#app').classList.add('on');
   $('#drop').style.display='none';
   $('#btnExport').hidden=false;
   renderTagList($('#q').value);
   renderXref(); renderNets();
   const gotoCount=NETS.reduce((a,n)=>a+n.gotos.length,0);
-  $('#status').textContent=`${BLOCKS.length} blokov · ${NETS.length} networkov · ${IDX.tags.size} tagov`+(gotoCount?` · ${gotoCount}× GOTO zaindexované`:'');
+  const bindCount=VNETS.length-NETS.length;
+  const unsup=NETS.filter(n=>n.unsupported).length;
+  $('#status').textContent=`${BLOCKS.length} blokov · ${NETS.length} networkov · ${IDX.tags.size} tagov · ${bindCount} väzieb volaní`
+    +(gotoCount?` · ${gotoCount}× GOTO`:'')
+    +(unsup?` · ⚠ ${unsup} networkov v nepodporovanom jazyku (STL/GRAPH)`:'');
   if(SEL&&IDX.tags.has(SEL))renderTrace();
 }
 
@@ -373,9 +442,14 @@ function selectTag(t){
 
 function chip(t,mode,click=true){return `<span class="tagchip ${mode}${click?' click':''}" data-tag="${esc(t)}">${esc(t)}</span>`;}
 
+function branchLabel(b){
+  if(b.synthetic)return (DIR==='up'?'⇐ cez pin volania ':'⇒ cez pin volania ')+`<b>${esc(b.title.replace('CALL ',''))}</b>`;
+  return (DIR==='up'?'⇐ zapisuje':'⇒ číta')+` <b>${esc(b.block)}</b> / Net${b.network}`+(b.title?` — ${esc(b.title)}`:'');
+}
+
 function renderTrace(){
   if(!SEL){$('#trace').innerHTML='<div class="empty">Vyber tag.</div>';return;}
-  const tree=DIR==='up'?traceUpstream(SEL,NETS,IDX):traceDownstream(SEL,NETS,IDX);
+  const tree=DIR==='up'?traceUpstream(SEL,VNETS,IDX):traceDownstream(SEL,VNETS,IDX);
   $('#dirUp').classList.toggle('primary',DIR==='up');
   $('#dirDown').classList.toggle('primary',DIR!=='up');
   function nodeHtml(n,root){
@@ -385,13 +459,12 @@ function renderTrace(){
     h+=`</div>`;
     const branches=DIR==='up'?(n.sources||[]):(n.targets||[]);
     for(const b of branches){
-      h+=`<div class="netline">${DIR==='up'?'⇐ zapisuje':'⇒ číta'} <b>${esc(b.block)}</b> / Net${b.network}`+
-         (b.title?` — ${esc(b.title)}`:'')+
+      h+=`<div class="netline${b.synthetic?' bind':''}">${branchLabel(b)}`+
          (b.gotos&&b.gotos.length?` <span class="flag goto">GOTO ${esc(b.gotos.join(','))}</span>`:'')+`</div>`;
       const kids=DIR==='up'?b.inputs:b.outputs;
       for(const k of kids)h+=nodeHtml(k,false);
     }
-    if(root&&!branches.length)h+=`<div class="netline">Žiadny network tento tag ${DIR==='up'?'nezapisuje':'nečíta'} — signál ${DIR==='up'?'prichádza zvonka (fyzický vstup / HMI) alebo blok chýba v importe':'nikam nepokračuje v importovaných blokoch'}.</div>`;
+    if(root&&!branches.length)h+=`<div class="netline">Žiadny network tento tag ${DIR==='up'?'nezapisuje':'nečíta'} — signál ${DIR==='up'?'prichádza zvonka (fyzický vstup / HMI), alebo blok chýba v importe':'nikam nepokračuje v importovaných blokoch'}.</div>`;
     h+=`</div>`;
     return h;
   }
@@ -402,14 +475,14 @@ function renderGraph(){
   if(!SEL)return;
   const eles=[],seen=new Set();
   function addTag(t,root){const id='t:'+t;if(!seen.has(id)){seen.add(id);eles.push({data:{id,label:t},classes:root?'seltag':'tag'});}return id;}
-  function addNet(b,n,title){const id=`n:${b}/${n}`;if(!seen.has(id)){seen.add(id);eles.push({data:{id,label:`${b}/Net${n}`},classes:'net'});}return id;}
-  const tree=DIR==='up'?traceUpstream(SEL,NETS,IDX,6):traceDownstream(SEL,NETS,IDX,6);
+  let nSeq=0;
+  function addNet(b){const id='n:'+(nSeq++);eles.push({data:{id,label:b.synthetic?b.title.replace('CALL ','⇄ '):`${b.block}/Net${b.network}`},classes:'net'});return id;}
+  const tree=DIR==='up'?traceUpstream(SEL,VNETS,IDX,6):traceDownstream(SEL,VNETS,IDX,6);
   (function walk(node,root){
     const tid=addTag(node.tag,root);
     const branches=DIR==='up'?(node.sources||[]):(node.targets||[]);
     for(const b of branches){
-      const nid=addNet(b.block,b.network,b.title);
-      // šípky vždy v smere toku signálu: zdroj → network → cieľ
+      const nid=addNet(b);
       if(DIR==='up')eles.push({data:{id:'e'+eles.length,source:nid,target:tid}});
       else eles.push({data:{id:'e'+eles.length,source:tid,target:nid}});
       const kids=DIR==='up'?b.inputs:b.outputs;
@@ -442,19 +515,23 @@ function renderGraph(){
 function renderXref(){
   const tags=[...IDX.tags].sort();
   $('#xtab tbody').innerHTML=tags.map(t=>{
-    const w=(IDX.writesOf[t]||[]).map(i=>`<b>${esc(NETS[i].block)}</b>/Net${NETS[i].index}`).join('<br>')||'—';
-    const r=(IDX.readsOf[t]||[]).map(i=>`<b>${esc(NETS[i].block)}</b>/Net${NETS[i].index}`).join('<br>')||'—';
+    const fmt=i=>{const n=VNETS[i];return n.synthetic?`<span style="color:var(--green)">⇄ ${esc(n.title)}</span>`:`<b>${esc(n.block)}</b>/Net${n.index}`;};
+    const w=(IDX.writesOf[t]||[]).map(fmt).join('<br>')||'—';
+    const r=(IDX.readsOf[t]||[]).map(fmt).join('<br>')||'—';
     return `<tr><td class="mono">${chip(t,(IDX.writesOf[t]||[]).length?'w':'r')}</td><td class="mono">${w}</td><td class="mono">${r}</td></tr>`;
   }).join('');
 }
 
 function renderNets(){
-  $('#ntab tbody').innerHTML=NETS.map(n=>{
-    const extra=[...n.calls.map(c=>'CALL '+esc(c)),...n.gotos.map(g=>`<span class="flag goto">GOTO ${esc(g)}</span>`),
-                 ...n.labels.map(l=>`<span class="flag">label ${esc(l)}</span>`)].join(' ')||'—';
-    return `<tr><td class="mono"><b>${esc(n.block)}</b>/Net${n.index}</td><td>${esc(n.title)||'—'}</td>
-      <td class="mono">${n.reads.map(t=>chip(t,'r')).join(' ')||'—'}</td>
-      <td class="mono">${n.writes.map(t=>chip(t,'w')).join(' ')||'—'}</td>
+  $('#ntab tbody').innerHTML=VNETS.map(n=>{
+    const extra=[...(n.calls||[]).map(c=>'CALL '+esc(c)),
+                 ...(n.gotos||[]).map(g=>`<span class="flag goto">GOTO ${esc(g)}</span>`),
+                 ...(n.labels||[]).map(l=>`<span class="flag">label ${esc(l)}</span>`),
+                 ...(n.unsupported?[`<span class="flag warn">${esc(n.unsupported)} — nepodporované</span>`]:[]),
+                 ...(n.synthetic?[`<span class="flag bind">väzba volania</span>`]:[])].join(' ')||'—';
+    return `<tr${n.synthetic?' class="synth"':''}><td class="mono"><b>${esc(n.block)}</b>/Net${n.index}</td><td>${esc(n.title)||'—'}</td>
+      <td class="mono">${(n.reads||[]).map(t=>chip(t,'r')).join(' ')||'—'}</td>
+      <td class="mono">${(n.writes||[]).map(t=>chip(t,'w')).join(' ')||'—'}</td>
       <td class="mono">${extra}</td></tr>`;
   }).join('');
 }
@@ -493,7 +570,7 @@ async function loadFiles(list){
 }
 
 $('#btnExport').onclick=()=>{
-  const data=JSON.stringify({blocks:BLOCKS,networks:NETS},null,2);
+  const data=JSON.stringify({blocks:BLOCKS,networks:VNETS},null,2);
   const a=document.createElement('a');
   a.href=URL.createObjectURL(new Blob([data],{type:'application/json'}));
   a.download='tia-xref-model.json';a.click();URL.revokeObjectURL(a.href);
