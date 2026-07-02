@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Document>
+  <Engineering version="V17" />
+  <SW.Blocks.FB ID="0">
+    <AttributeList>
+      <Name>FB_Safety</Name>
+      <Number>100</Number>
+      <ProgrammingLanguage>SCL</ProgrammingLanguage>
+      <Interface><Sections xmlns="http://www.siemens.com/automation/Openness/SW/Interface/v4">
+        <Section Name="Input">
+          <Member Name="EStop_Ch1" Datatype="Bool" />
+          <Member Name="EStop_Ch2" Datatype="Bool" />
+        </Section>
+      </Sections></Interface>
+    </AttributeList>
+    <ObjectList>
+      <SW.Blocks.CompileUnit ID="3" CompositionName="CompileUnits">
+        <AttributeList>
+          <NetworkSource>
+            <StructuredText xmlns="http://www.siemens.com/automation/Openness/SW/NetworkSource/StructuredText/v3">
+              <Token Text="IF" UId="21" />
+              <Blank UId="22" />
+              <Access Scope="GlobalVariable" UId="23">
+                <Symbol UId="24"><Component Name="I_EStop_Button" UId="25" /></Symbol>
+              </Access>
+              <Blank UId="26" />
+              <Token Text="AND" UId="27" />
+              <Blank UId="28" />
+              <Access Scope="LocalVariable" UId="29">
+                <Symbol UId="30"><Component Name="EStop_Ch1" UId="31" /></Symbol>
+              </Access>
+              <Blank UId="32" />
+              <Token Text="AND" UId="33" />
+              <Blank UId="34" />
+              <Access Scope="LocalVariable" UId="35">
+                <Symbol UId="36"><Component Name="EStop_Ch2" UId="37" /></Symbol>
+              </Access>
+              <Blank UId="38" />
+              <Token Text="THEN" UId="39" />
+              <NewLine UId="40" />
+              <Blank Num="4" UId="41" />
+              <Access Scope="GlobalVariable" UId="42">
+                <Symbol UId="43">
+                  <Component Name="DB_Safety" UId="44" />
+                  <Component Name="Safety_OK" UId="45" />
+                </Symbol>
+              </Access>
+              <Blank UId="46" />
+              <Token Text=":=" UId="47" />
+              <Blank UId="48" />
+              <Token Text="TRUE" UId="49" />
+              <Token Text=";" UId="50" />
+              <NewLine UId="51" />
+              <Token Text="ELSE" UId="52" />
+              <NewLine UId="53" />
+              <Blank Num="4" UId="54" />
+              <Token Text="GOTO" UId="55" />
+              <Blank UId="56" />
+              <Token Text="FAULT_EXIT" UId="57" />
+              <Token Text=";" UId="58" />
+              <NewLine UId="59" />
+              <Token Text="END_IF" UId="60" />
+              <Token Text=";" UId="61" />
+              <NewLine UId="62" />
+              <Token Text="RETURN" UId="63" />
+              <Token Text=";" UId="64" />
+              <NewLine UId="65" />
+              <Token Text="FAULT_EXIT" UId="66" />
+              <Token Text=":" UId="67" />
+              <NewLine UId="68" />
+              <Access Scope="GlobalVariable" UId="69">
+                <Symbol UId="70">
+                  <Component Name="DB_Safety" UId="71" />
+                  <Component Name="Safety_OK" UId="72" />
+                </Symbol>
+              </Access>
+              <Blank UId="73" />
+              <Token Text=":=" UId="74" />
+              <Blank UId="75" />
+              <Token Text="FALSE" UId="76" />
+              <Token Text=";" UId="77" />
+              <NewLine UId="78" />
+              <Access Scope="GlobalVariable" UId="79">
+                <Symbol UId="80">
+                  <Component Name="DB_Safety" UId="81" />
+                  <Component Name="Fault_Latch" UId="82" />
+                </Symbol>
+              </Access>
+              <Blank UId="83" />
+              <Token Text=":=" UId="84" />
+              <Blank UId="85" />
+              <Token Text="TRUE" UId="86" />
+              <Token Text=";" UId="87" />
+            </StructuredText>
+          </NetworkSource>
+        </AttributeList>
+        <ObjectList>
+          <MultilingualText ID="A" CompositionName="Title">
+            <ObjectList>
+              <MultilingualTextItem ID="B" CompositionName="Items">
+                <AttributeList>
+                  <Culture>en-US</Culture>
+                  <Text>E-Stop evaluation with fault exit</Text>
+                </AttributeList>
+              </MultilingualTextItem>
+            </ObjectList>
+          </MultilingualText>
+        </ObjectList>
+      </SW.Blocks.CompileUnit>
+    </ObjectList>
+  </SW.Blocks.FB>
+  <SW.Blocks.OB ID="100">
+    <AttributeList>
+      <Name>Main</Name>
+      <Number>1</Number>
+      <ProgrammingLanguage>LAD</ProgrammingLanguage>
+    </AttributeList>
+    <ObjectList>
+      <SW.Blocks.CompileUnit ID="103" CompositionName="CompileUnits">
+        <AttributeList>
+          <NetworkSource>
+            <FlgNet xmlns="http://www.siemens.com/automation/Openness/SW/NetworkSource/FlgNet/v4">
+              <Parts>
+                <Access Scope="GlobalVariable" UId="21">
+                  <Symbol><Component Name="I_Start_Button" /></Symbol>
+                </Access>
+                <Access Scope="GlobalVariable" UId="22">
+                  <Symbol><Component Name="HMI_Auto_Mode" /></Symbol>
+                </Access>
+                <Access Scope="GlobalVariable" UId="23">
+                  <Symbol><Component Name="M1_Running" /></Symbol>
+                </Access>
+                <Call UId="31">
+                  <CallInfo Name="FB_Motor" BlockType="FB">
+                    <Instance Scope="GlobalVariable" UId="32">
+                      <Component Name="DB_Motor_Inst" />
+                    </Instance>
+                    <Parameter Name="Start_Req" Section="Input" Type="Bool" />
+                    <Parameter Name="Auto_Mode" Section="Input" Type="Bool" />
+                    <Parameter Name="Motor_Run" Section="Output" Type="Bool" />
+                  </CallInfo>
+                </Call>
+              </Parts>
+              <Wires>
+                <Wire UId="41"><Powerrail /><NameCon UId="31" Name="en" /></Wire>
+                <Wire UId="42"><IdentCon UId="21" /><NameCon UId="31" Name="Start_Req" /></Wire>
+                <Wire UId="43"><IdentCon UId="22" /><NameCon UId="31" Name="Auto_Mode" /></Wire>
+                <Wire UId="44"><NameCon UId="31" Name="Motor_Run" /><IdentCon UId="23" /></Wire>
+              </Wires>
+            </FlgNet>
+          </NetworkSource>
+        </AttributeList>
+        <ObjectList>
+          <MultilingualText ID="E" CompositionName="Title">
+            <ObjectList>
+              <MultilingualTextItem ID="F" CompositionName="Items">
+                <AttributeList>
+                  <Culture>en-US</Culture>
+                  <Text>Call motor control</Text>
+                </AttributeList>
+              </MultilingualTextItem>
+            </ObjectList>
+          </MultilingualText>
+        </ObjectList>
+      </SW.Blocks.CompileUnit>
+    </ObjectList>
+  </SW.Blocks.OB>
+</Document>
