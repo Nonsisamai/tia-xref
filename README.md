@@ -1,7 +1,7 @@
 Program v plc, uz si spominam par logik, program je rozdelený na bloky a signály majú mená — tzv. tagy: Tlacidlo_Start, Safety_OK, Motor_Bezi. Logika je: ak platí Tlačidlo ŠTART a zároveň Safety OK a zároveň Auto režim → zapni motor. primitivne ale co ked je toho mnoho?? 
 Reálny program vo fabrike má stovky blokov a tisíce tagov
 A teraz ten problém. 
-Keď sa motor nerozbehne, neikde v tej reťazi jedna podmienka neplatí — ale ktorá? Technik ju hľadá ručne: otvorí blok, nájde, že chýba Cmd_Start, preklikne sa do ďalšieho bloku, kde zistí, že chýba Safety_OK, preklikne do safety bloku... Pri poruche na linke to môže trvať hodinu, a linka medzitým stojí — čo v priemysle znamená veľké peniaze každú minútu.
+Keď sa motor nerozbehne, neikde vtom reťazci jedna podmienka neplatí — ale ktorá? Technik ju hľadá ručne: otvorí blok, nájde, že chýba Cmd_Start, preklikne sa do ďalšieho bloku, kde zistí, že chýba Safety_OK, preklikne do safety bloku... Pri poruche na linke to môže trvať hodinu, a linka medzitým stojí — čo v priemysle znamená veľké peniaze každú minútu.
 Naša appka robí presne toto hľadanie za teba. Zoberie program (exportovaný z TIA ako XML), zostaví z neho mapu „kto ovplyvňuje koho", a na otázku „prečo nejde motor?" vypľuje celý strom príčin naraz: motor ← povel štart ← safety OK ← núdzové tlačidlo na vstupe. Namiesto hodiny preklikávania jeden pohľad. To je celá pointa — nič viac, nič menej
 
 
